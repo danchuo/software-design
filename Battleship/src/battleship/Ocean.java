@@ -12,6 +12,7 @@ public class Ocean {
   private final int columns;
 
   private Ship lastAttackedShip;
+  private Ship preLastAttackedShip;
   private OceanMap oceanMap;
   private int numberOfShipsSunk;
 
@@ -27,6 +28,7 @@ public class Ocean {
     this.columns = columns;
     totalNumberOfShips = submarines + destroyers + cruisers + battleships + carriers;
     lastAttackedShip = null;
+    preLastAttackedShip = null;
     numberOfShipsSunk = 0;
     rockets = new ArrayList<>();
     ships = fillOcean(submarines, destroyers, cruisers, battleships, carriers);
@@ -61,12 +63,18 @@ public class Ocean {
     for (var ship : ships) {
       result = ship.hitShip(rocket);
       if (result != ResultOfHit.MISS) {
+        preLastAttackedShip = lastAttackedShip;
         lastAttackedShip = ship;
         if (result == ResultOfHit.HIT_AND_SUNK) {
           ++numberOfShipsSunk;
         }
         break;
       }
+    }
+
+    if (result == ResultOfHit.MISS) {
+      preLastAttackedShip = lastAttackedShip;
+      lastAttackedShip = null;
     }
 
     rockets.add(rocket);
@@ -86,6 +94,28 @@ public class Ocean {
     return new Ocean(rows, columns, submarines, destroyers, cruisers, battleships, carriers);
   }
 
+
+  public void recoverShip(Ship ship) {
+    ship.recoverShip();
+
+    for (var chunk : ship.getChunks()) {
+      for (var rocket : rockets) {
+        if (chunk.areCoordinatesEqual(rocket)) {
+          rockets.remove(rocket);
+          break;
+        }
+      }
+    }
+  }
+
+
+  public int getLengthOfAllShips() {
+    int length = 0;
+    for (var ship : ships) {
+      length += ship.getLength();
+    }
+    return length;
+  }
 
   public void printMap() {
     oceanMap.printMap();
@@ -109,6 +139,10 @@ public class Ocean {
 
   public int getColumns() {
     return columns;
+  }
+
+  public Ship getPreLastAttackedShip() {
+    return preLastAttackedShip;
   }
 
 }

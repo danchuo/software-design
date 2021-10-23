@@ -6,7 +6,8 @@ import java.util.Random;
 public class OceanMap {
 
   public static final char SYMBOL_OF_OCEAN = 'o';
-  public static final char SYMBOL_OF_SHIP = 's';
+  public static final char SYMBOL_OF_SUNK_SHIP = 's';
+  public static final char SYMBOL_OF_DAMAGED_CHUNK = 'h';
   public static final char SYMBOL_OF_PLACE_AROUND_SHIP = 'x';
 
   private final int rows;
@@ -56,13 +57,19 @@ public class OceanMap {
     }
 
     for (var ship : ships) {
-      for (var chunk : ship.getChunks()) {
-        if (chunk.isHit()) {
-          map[chunk.getY()][chunk.getX()] = SYMBOL_OF_SHIP;
-        }
-      }
       if (ship.isSunk()) {
+        for (var chunk : ship.getChunks()) {
+          if (chunk.isHit()) {
+            map[chunk.getY()][chunk.getX()] = SYMBOL_OF_SUNK_SHIP;
+          }
+        }
         markPlaceAroundShip(ship);
+      } else {
+        for (var chunk : ship.getChunks()) {
+          if (chunk.isHit()) {
+            map[chunk.getY()][chunk.getX()] = SYMBOL_OF_DAMAGED_CHUNK;
+          }
+        }
       }
     }
   }
@@ -153,7 +160,7 @@ public class OceanMap {
         ship.setChunks(chunks);
 
         for (var chunk : chunks) {
-          map[chunk.getY()][chunk.getX()] = SYMBOL_OF_SHIP;
+          map[chunk.getY()][chunk.getX()] = SYMBOL_OF_SUNK_SHIP;
         }
 
         ship.setAlignment((randomAlignment % 2 == 0) ? Alignment.VERTICAL : Alignment.HORIZONTAL);
