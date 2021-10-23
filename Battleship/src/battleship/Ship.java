@@ -2,10 +2,17 @@ package battleship;
 
 public abstract class Ship {
 
-  private final ChunkOfShip[] chunks;
+  private ChunkOfShip[] chunks;
 
-  Ship(ChunkOfShip[] chunks) {
-    this.chunks = chunks;
+  private Alignment alignment;
+
+  Ship() {
+  }
+
+  public void recoverShip() {
+    for (var chunk : chunks) {
+      chunk.setHit(false);
+    }
   }
 
   public boolean isSunk() {
@@ -18,10 +25,6 @@ public abstract class Ship {
   }
 
   public abstract int getLength();
-
-  public ChunkOfShip[] getChunks() {
-    return chunks.clone();
-  }
 
   public ResultOfHit hitShip(Rocket rocket) {
     for (var chunk : chunks) {
@@ -44,10 +47,29 @@ public abstract class Ship {
         }
 
         chunk.setHit(true);
+        if (isSunk()) {
+          return ResultOfHit.HIT_AND_SUNK;
+        }
         return ResultOfHit.HIT;
       }
     }
 
     return ResultOfHit.MISS;
+  }
+
+  public ChunkOfShip[] getChunks() {
+    return chunks;
+  }
+
+  public void setChunks(ChunkOfShip[] chunks) {
+    this.chunks = chunks;
+  }
+
+  public Alignment getAlignment() {
+    return alignment;
+  }
+
+  public void setAlignment(Alignment alignment) {
+    this.alignment = alignment;
   }
 }

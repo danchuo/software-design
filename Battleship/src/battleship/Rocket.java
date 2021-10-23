@@ -4,7 +4,7 @@ public class Rocket extends Coordinate {
 
   private final boolean isTorpedo;
 
-  public Rocket(int x, int y, boolean isTorpedo) {
+  Rocket(int x, int y, boolean isTorpedo) {
     super(x, y);
     this.isTorpedo = isTorpedo;
   }

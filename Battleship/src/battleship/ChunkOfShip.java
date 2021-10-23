@@ -4,7 +4,7 @@ public class ChunkOfShip extends Coordinate {
 
   private boolean isHit;
 
-  public ChunkOfShip(int x, int y) {
+  ChunkOfShip(int x, int y) {
     super(x, y);
     isHit = false;
   }
