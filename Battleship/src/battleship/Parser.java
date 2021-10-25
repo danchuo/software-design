@@ -10,8 +10,18 @@ public class Parser {
     scanner = new Scanner(System.in);
   }
 
+
+  /**
+   * The method tries to process the rocket input by the user from the console until it is entered
+   * correctly.
+   *
+   * @param rows                       Nubmer of rows in the ocean map.
+   * @param columns                    Nubmer of columns in the ocean map.
+   * @param numberOfAvailableTorpedoes Nubmer of numberOfAvailableTorpedoes.
+   * @return Parsed rocket.
+   */
   public Rocket parseRocket(int rows, int columns, int numberOfAvailableTorpedoes) {
-    System.out.println("\nEnter the chunk you want to attack in the format \"T x y\",\n"
+    System.out.println("\nEnter the cell you want to attack in the format \"T x y\",\n"
         + "where 'T' is an optional flag indicating whether the missile is a torpedo ("
         + numberOfAvailableTorpedoes +
         " torpedoes available),\n"
@@ -24,7 +34,7 @@ public class Parser {
     Integer y;
 
     if (words.length == 3) {
-      if (words[0].equals("T")) {
+      if ("T".equals(words[0])) {
         if (numberOfAvailableTorpedoes > 0) {
           x = parseIntOrNull(words[1]);
           y = parseIntOrNull(words[2]);
@@ -60,12 +70,19 @@ public class Parser {
   }
 
 
+  /**
+   * @param args             Input array.
+   * @param numberOfArgument Number of argument in input args array.
+   * @param phrase           Phrase that will be printed in the console.
+   * @param min              Minimum allowed value.
+   * @param max              Maximum allowed value.
+   * @return Result of parsing.
+   */
   public int tryGetArgumentFromArgs(String[] args, int numberOfArgument, String phrase, int min,
       int max) {
-    Integer result;
 
     if (args != null && args.length > numberOfArgument) {
-      result = parseIntOrNull(args[numberOfArgument]);
+      Integer result = parseIntOrNull(args[numberOfArgument]);
       if (result != null && result >= min && result <= max) {
         return result;
       }
@@ -74,23 +91,22 @@ public class Parser {
     return askNumber(phrase, min, max);
   }
 
-  public int askNumber(String phrase, int min, int max) {
+  private int askNumber(String phrase, int min, int max) {
     Integer result;
     do {
       System.out.println("Please enter the " + phrase +
           " that belongs to the range [" + min + ";" + max + "]...");
       result = parseIntOrNull(scanner.nextLine());
-
     } while (result == null || result < min || result > max);
 
     return result;
   }
 
-  public void makeManyBlankLines() {
-    System.out.println(System.lineSeparator().repeat(50));
+  public void makeNBlankLines(int number) {
+    System.out.println(System.lineSeparator().repeat(number));
   }
 
-  public Integer parseIntOrNull(String value) {
+  private Integer parseIntOrNull(String value) {
     try {
       return Integer.parseInt(value);
     } catch (NumberFormatException e) {

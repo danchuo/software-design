@@ -27,10 +27,6 @@ public class Coordinate {
   }
 
   public boolean areCoordinatesEqual(Coordinate other) {
-    if (other == null) {
-      return false;
-    }
-
-    return this.x == other.x && this.y == other.y;
+    return other != null && x == other.x && y == other.y;
   }
 }

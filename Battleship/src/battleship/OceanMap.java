@@ -8,13 +8,12 @@ public class OceanMap {
   public static final char SYMBOL_OF_OCEAN = 'o';
   public static final char SYMBOL_OF_SUNK_SHIP = 's';
   public static final char SYMBOL_OF_DAMAGED_CHUNK = 'h';
-  public static final char SYMBOL_OF_PLACE_AROUND_SHIP = 'x';
+  public static final char SYMBOL_OF_PLACE_MISSED_ROCKET = 'x';
 
   private final int rows;
   private final int columns;
   private final List<Ship> ships;
   private final List<Rocket> rockets;
-
   private final char[][] map;
 
   OceanMap(int rows, int columns, List<Ship> ships, List<Rocket> rockets) {
@@ -28,6 +27,9 @@ public class OceanMap {
   }
 
 
+  /**
+   * Prints a map of the ocean into console.
+   */
   public void printMap() {
     rewriteMap();
     int maxFormatLength = Math.max(Integer.toString(rows).length(),
@@ -43,17 +45,18 @@ public class OceanMap {
         } else {
           System.out.format("%" + maxFormatLength + "c", map[i][j]);
         }
-
       }
       System.out.println();
     }
   }
 
-
+  /**
+   * The method updates the map by adding information about rockets fired, hit and sunk ships.
+   */
   private void rewriteMap() {
     clearMap();
     for (var rocket : rockets) {
-      map[rocket.getY()][rocket.getX()] = SYMBOL_OF_PLACE_AROUND_SHIP;
+      map[rocket.getY()][rocket.getX()] = SYMBOL_OF_PLACE_MISSED_ROCKET;
     }
 
     for (var ship : ships) {
@@ -84,22 +87,25 @@ public class OceanMap {
   }
 
 
-  public void positionShip(Ship ship) {
+  /**
+   * Tries 4000 times to place the ship on the map in a random place, throws an StackOverflowError
+   * if it fails.
+   *
+   * @param ship
+   */
+  public void positionShip(Ship ship) throws StackOverflowError {
     Random rand = new Random();
-    int randomAlignment;
-    int randomX;
-    int randomY;
-    boolean isPositionFind = false;
 
     ChunkOfShip[] chunks = new ChunkOfShip[ship.getLength()];
     for (int i = 0; i < ship.getLength(); ++i) {
       chunks[i] = new ChunkOfShip(0, 0);
     }
 
+    boolean isPositionFind = false;
     for (int i = 0; i < 4000; ++i) {
-      randomAlignment = rand.nextInt(0, 4);
-      randomX = rand.nextInt(0, columns);
-      randomY = rand.nextInt(0, rows);
+      int randomAlignment = rand.nextInt(0, 4);
+      int randomX = rand.nextInt(0, columns);
+      int randomY = rand.nextInt(0, rows);
 
       switch (randomAlignment) {
         case 0 -> {
@@ -163,7 +169,11 @@ public class OceanMap {
           map[chunk.getY()][chunk.getX()] = SYMBOL_OF_SUNK_SHIP;
         }
 
-        ship.setAlignment((randomAlignment % 2 == 0) ? Alignment.VERTICAL : Alignment.HORIZONTAL);
+        if (randomAlignment % 2 == 0) {
+          ship.setAlignment(Alignment.VERTICAL);
+        } else {
+          ship.setAlignment(Alignment.HORIZONTAL);
+        }
 
         markPlaceAroundShip(ship);
         break;
@@ -173,9 +183,15 @@ public class OceanMap {
     if (!isPositionFind) {
       throw new StackOverflowError("A lot of ships");
     }
-
   }
 
+
+  /**
+   * The method marks the place around the ship by SYMBOL_OF_PLACE_MISSED_ROCKET at the map depends
+   * on its alignment.
+   *
+   * @param ship Ship to mark.
+   */
   private void markPlaceAroundShip(Ship ship) {
     switch (ship.getAlignment()) {
       case HORIZONTAL -> markPlaceAroundHorizontalShip(ship);
@@ -188,99 +204,97 @@ public class OceanMap {
     for (int i = 0; i < ship.getLength(); ++i) {
       var currentChunk = ship.getChunks()[i];
 
-      if ((i == 0) && (currentChunk.getX() - 1 >= 0)) {
+      if (i == 0 && currentChunk.getX() - 1 >= 0) {
         map[currentChunk.getY()][currentChunk.getX()
             - 1] =
-            SYMBOL_OF_PLACE_AROUND_SHIP;
+            SYMBOL_OF_PLACE_MISSED_ROCKET;
         if (currentChunk.getY() - 1 >= 0) {
           map[currentChunk.getY() - 1][currentChunk.getX()
               - 1] =
-              SYMBOL_OF_PLACE_AROUND_SHIP;
+              SYMBOL_OF_PLACE_MISSED_ROCKET;
         }
         if (currentChunk.getY() + 1 < rows) {
           map[currentChunk.getY() + 1][currentChunk.getX()
               - 1] =
-              SYMBOL_OF_PLACE_AROUND_SHIP;
+              SYMBOL_OF_PLACE_MISSED_ROCKET;
         }
       }
 
-      if ((i == ship.getLength() - 1) && (currentChunk.getX() + 1 < columns)) {
+      if (i == ship.getLength() - 1 && currentChunk.getX() + 1 < columns) {
         map[currentChunk.getY()][currentChunk.getX()
             + 1] =
-            SYMBOL_OF_PLACE_AROUND_SHIP;
+            SYMBOL_OF_PLACE_MISSED_ROCKET;
         if (currentChunk.getY() - 1 >= 0) {
           map[currentChunk.getY() - 1][currentChunk.getX()
               + 1] =
-              SYMBOL_OF_PLACE_AROUND_SHIP;
+              SYMBOL_OF_PLACE_MISSED_ROCKET;
         }
         if (currentChunk.getY() + 1 < rows) {
           map[currentChunk.getY() + 1][currentChunk.getX()
               + 1] =
-              SYMBOL_OF_PLACE_AROUND_SHIP;
+              SYMBOL_OF_PLACE_MISSED_ROCKET;
         }
       }
 
       if (currentChunk.getY() - 1 >= 0) {
         map[currentChunk.getY()
             - 1][currentChunk.getX()] =
-            SYMBOL_OF_PLACE_AROUND_SHIP;
+            SYMBOL_OF_PLACE_MISSED_ROCKET;
       }
       if (currentChunk.getY() + 1 < rows) {
         map[currentChunk.getY()
             + 1][currentChunk.getX()] =
-            SYMBOL_OF_PLACE_AROUND_SHIP;
+            SYMBOL_OF_PLACE_MISSED_ROCKET;
       }
     }
   }
-
 
   private void markPlaceAroundVerticalShip(Ship ship) {
     for (int i = 0; i < ship.getLength(); ++i) {
       var currentChunk = ship.getChunks()[i];
 
-      if ((i == 0) && (currentChunk.getY() - 1 >= 0)) {
+      if (i == 0 && currentChunk.getY() - 1 >= 0) {
         map[currentChunk.getY()
             - 1][currentChunk.getX()] =
-            SYMBOL_OF_PLACE_AROUND_SHIP;
+            SYMBOL_OF_PLACE_MISSED_ROCKET;
         if (currentChunk.getX() - 1 >= 0) {
           map[currentChunk.getY() - 1][currentChunk.getX()
               - 1] =
-              SYMBOL_OF_PLACE_AROUND_SHIP;
+              SYMBOL_OF_PLACE_MISSED_ROCKET;
         }
         if (currentChunk.getX() + 1 < columns) {
           map[currentChunk.getY() - 1][currentChunk.getX()
               + 1] =
-              SYMBOL_OF_PLACE_AROUND_SHIP;
+              SYMBOL_OF_PLACE_MISSED_ROCKET;
         }
       }
 
-      if ((i == ship.getLength() - 1) && (currentChunk.getY() + 1 < rows)) {
+      if (i == ship.getLength() - 1 && currentChunk.getY() + 1 < rows) {
         map[currentChunk.getY()
             + 1][currentChunk.getX()] =
-            SYMBOL_OF_PLACE_AROUND_SHIP;
+            SYMBOL_OF_PLACE_MISSED_ROCKET;
         if (currentChunk.getX() - 1 >= 0) {
           map[currentChunk.getY() + 1][currentChunk.getX()
               - 1] =
-              SYMBOL_OF_PLACE_AROUND_SHIP;
+              SYMBOL_OF_PLACE_MISSED_ROCKET;
         }
         if (currentChunk.getX() + 1 < columns) {
           map[currentChunk.getY() + 1][currentChunk.getX()
               + 1] =
-              SYMBOL_OF_PLACE_AROUND_SHIP;
+              SYMBOL_OF_PLACE_MISSED_ROCKET;
         }
       }
 
       if (currentChunk.getX() - 1 >= 0) {
         map[currentChunk.getY()][currentChunk.getX()
             - 1] =
-            SYMBOL_OF_PLACE_AROUND_SHIP;
+            SYMBOL_OF_PLACE_MISSED_ROCKET;
       }
       if (currentChunk.getX() + 1 < columns) {
         map[currentChunk.getY()][currentChunk.getX()
             + 1] =
-            SYMBOL_OF_PLACE_AROUND_SHIP;
+            SYMBOL_OF_PLACE_MISSED_ROCKET;
       }
     }
   }
-
 }

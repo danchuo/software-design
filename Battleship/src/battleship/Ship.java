@@ -9,6 +9,10 @@ public abstract class Ship {
   Ship() {
   }
 
+
+  /**
+   * Recover the ship.
+   */
   public void recoverShip() {
     for (var chunk : chunks) {
       chunk.setHit(false);
@@ -24,8 +28,19 @@ public abstract class Ship {
     return true;
   }
 
+
+  /**
+   * @return Length of current ship.
+   */
   public abstract int getLength();
 
+
+  /**
+   * The method tries to hit the ship with a rocket.
+   *
+   * @param rocket Attacking rocket
+   * @return Returns the result of a missile attack on the ship.
+   */
   public ResultOfHit hitShip(Rocket rocket) {
     for (var chunk : chunks) {
       if (chunk.areCoordinatesEqual(rocket)) {
@@ -61,8 +76,8 @@ public abstract class Ship {
     return chunks;
   }
 
-  public void setChunks(ChunkOfShip[] chunks) {
-    this.chunks = chunks;
+  public void setChunks(ChunkOfShip... chunks) {
+    this.chunks = chunks.clone();
   }
 
   public Alignment getAlignment() {
