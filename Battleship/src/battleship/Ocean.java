@@ -112,7 +112,6 @@ public class Ocean {
     return new Ocean(rows, columns, submarines, destroyers, cruisers, battleships, carriers);
   }
 
-
   /**
    * Recover the ship and removes all the rockets that were fired at it.
    *
