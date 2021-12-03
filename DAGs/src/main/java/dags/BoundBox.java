@@ -9,7 +9,6 @@ public class BoundBox {
     if (minX > maxX || minY > maxY) {
       throw new IllegalArgumentException("Invalid coordinates!");
     }
-
     maxCoord2D = new Coord2D(maxX, maxY);
     minCoord2D = new Coord2D(minX, minY);
   }

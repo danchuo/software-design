@@ -35,7 +35,7 @@ public class Origin extends Point {
   public static Optional<BoundBox> getBoundBoxOf(Coord2D startPosition, Set<Point> set) {
     Optional<BoundBox> returnValue = Optional.empty();
 
-    if (!set.isEmpty()) {
+    if (set != null && !set.isEmpty()) {
       var maxX = Double.MIN_VALUE;
       var maxY = Double.MIN_VALUE;
       var minX = Double.MAX_VALUE;

@@ -15,6 +15,7 @@ public class Space {
     if (position == null) {
       throw new IllegalArgumentException("Position must be not null!");
     }
+    this.position = position;
     children = new HashSet<>();
   }
 
@@ -41,10 +42,13 @@ public class Space {
   }
 
   public void setPosition(Coord2D position) {
+    if (position == null) {
+      throw new IllegalArgumentException("Position must be not null!");
+    }
     this.position = position;
   }
 
   public Optional<BoundBox> getBoundBox() {
-    return Origin.getBoundBoxOf(new Coord2D(0, 0), new HashSet<>(children));
+    return Origin.getBoundBoxOf(position, new HashSet<>(children));
   }
 }
