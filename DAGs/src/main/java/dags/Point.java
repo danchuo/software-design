@@ -1,13 +1,21 @@
 package dags;
 
-import jdk.jshell.spi.ExecutionControl.NotImplementedException;
+import java.util.Optional;
 
-public class Point implements Cloneable {
+public class Point {
 
   private Coord2D position;
 
   Point(Coord2D position) {
+    if (position == null) {
+      throw new IllegalArgumentException("Position must be not null!");
+    }
+
     this.position = position;
+  }
+
+  Point(double x, double y) {
+    position = new Coord2D(x, y);
   }
 
   public final Coord2D getPosition() {
@@ -15,15 +23,14 @@ public class Point implements Cloneable {
   }
 
   public final void setPosition(Coord2D position) {
+    if (position == null) {
+      throw new IllegalArgumentException("Position must be not null!");
+    }
+
     this.position = position;
   }
 
-  public BoundBox getBoundBox() {
-    throw new NotImplementedException("boundbox");
-  }
-
-  @Override
-  public Point clone() {
-    return new Point(position);
+  public Optional<BoundBox> getBoundBox() {
+    return Optional.of(new BoundBox(position.x(), position.y(), position.x(), position.y()));
   }
 }

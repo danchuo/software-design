@@ -4,5 +4,10 @@ import java.io.Serial;
 
 public class DAGConstraintException extends Exception {
 
-  @Serial private static final long serialVersionUID = -8503389845293388237L;
+  DAGConstraintException(String message) {
+    super(message);
+  }
+
+  @Serial
+  private static final long serialVersionUID = -8503389845293388237L;
 }

@@ -2,15 +2,19 @@ package dags;
 
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
-import jdk.jshell.spi.ExecutionControl.NotImplementedException;
+import javax.management.openmbean.KeyAlreadyExistsException;
 
 public class Origin extends Point {
 
   private Set<Point> children;
 
+  private boolean isBlack;
+
   Origin(Coord2D position) {
     super(position);
+    isBlack = true;
     children = new HashSet<>();
   }
 
@@ -18,26 +22,75 @@ public class Origin extends Point {
     return Collections.unmodifiableSet(children);
   }
 
-  public void setChildren(Set<Point> children) {
-    var newChildren = new HashSet<Point>();
-
-    for (var child : children) {
-      newChildren.add(child.clone());
+  public void setChildren(Set<Point> children) throws DAGConstraintException {
+    if (children == null) {
+      throw new IllegalArgumentException("Children must be not null!");
     }
-    this.children = newChildren;
+
+    checkForCycles(children);
+
+    this.children = new HashSet<>(children);
   }
 
   @Override
-  public BoundBox getBoundBox() {
-    throw new NotImplementedException("boundbox");
+  public Optional<BoundBox> getBoundBox() {
+    Optional<BoundBox> returnValue = Optional.empty();
+
+    if (!children.isEmpty()) {
+      var maxX = Double.MIN_VALUE;
+      var maxY = Double.MIN_VALUE;
+      var minX = Double.MAX_VALUE;
+      var minY = Double.MAX_VALUE;
+      boolean isSomeoneFinded = false;
+
+      for (var child : children) {
+        var boundBox = child.getBoundBox();
+        if (boundBox.isPresent()) {
+          maxX = Double.max(maxX, boundBox.get().getMaxX());
+          maxY = Double.max(maxY, boundBox.get().getMaxY());
+          minX = Double.min(minX, boundBox.get().getMinX());
+          minY = Double.min(minY, boundBox.get().getMinY());
+          isSomeoneFinded = true;
+        }
+      }
+
+      if (isSomeoneFinded) {
+        returnValue = Optional.of(new BoundBox(maxX + getPosition().x(), maxY + getPosition().y(),
+            minX + getPosition().x(), minY + getPosition().x()));
+      }
+    }
+
+    return returnValue;
   }
 
-  @Override
-  public Origin clone() {
-    Origin result = new Origin(getPosition());
+  private void checkForCycles(Set<Point> setToCheck) throws DAGConstraintException {
+    try {
+      for (var point : setToCheck) {
+        if (point instanceof Origin origin) {
+          origin.checkForCyclesRecurive(this);
+        }
+      }
+    } catch (KeyAlreadyExistsException ignored) {
+      throw new DAGConstraintException("Cyclicity is noticed!");
+    }
+  }
+
+  private void checkForCyclesRecurive(Origin originToSet) {
+    if (this == originToSet) {
+      throw new KeyAlreadyExistsException("Cyclicity is noticed!");
+    }
+    isBlack = false;
+
     for (var point : children) {
-      result.children.add(point.clone());
+      if (point instanceof Origin origin) {
+        if (origin.isBlack) {
+          origin.checkForCyclesRecurive(this);
+        } else {
+          throw new KeyAlreadyExistsException("Cyclicity is noticed!");
+        }
+      }
     }
-    return result;
+
+    isBlack = true;
   }
 }
