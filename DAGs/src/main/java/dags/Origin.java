@@ -27,23 +27,22 @@ public class Origin extends Point {
       throw new IllegalArgumentException("Children must be not null!");
     }
 
-    checkForCycles(children);
+    checkForCycles(this, children);
 
     this.children = new HashSet<>(children);
   }
 
-  @Override
-  public Optional<BoundBox> getBoundBox() {
+  public static Optional<BoundBox> getBoundBoxOf(Coord2D startPosition, Set<Point> set) {
     Optional<BoundBox> returnValue = Optional.empty();
 
-    if (!children.isEmpty()) {
+    if (!set.isEmpty()) {
       var maxX = Double.MIN_VALUE;
       var maxY = Double.MIN_VALUE;
       var minX = Double.MAX_VALUE;
       var minY = Double.MAX_VALUE;
       boolean isSomeoneFinded = false;
 
-      for (var child : children) {
+      for (var child : set) {
         var boundBox = child.getBoundBox();
         if (boundBox.isPresent()) {
           maxX = Double.max(maxX, boundBox.get().getMaxX());
@@ -55,19 +54,25 @@ public class Origin extends Point {
       }
 
       if (isSomeoneFinded) {
-        returnValue = Optional.of(new BoundBox(maxX + getPosition().x(), maxY + getPosition().y(),
-            minX + getPosition().x(), minY + getPosition().x()));
+        returnValue = Optional.of(new BoundBox(maxX + startPosition.x(), maxY + startPosition.y(),
+            minX + startPosition.x(), minY + startPosition.x()));
       }
     }
 
     return returnValue;
   }
 
-  private void checkForCycles(Set<Point> setToCheck) throws DAGConstraintException {
+  @Override
+  public Optional<BoundBox> getBoundBox() {
+    return getBoundBoxOf(getPosition(), children);
+  }
+
+  public static void checkForCycles(Origin originToSet, Set<Point> setToCheck)
+      throws DAGConstraintException {
     try {
       for (var point : setToCheck) {
         if (point instanceof Origin origin) {
-          origin.checkForCyclesRecurive(this);
+          origin.checkForCyclesRecurive(originToSet);
         }
       }
     } catch (KeyAlreadyExistsException ignored) {
