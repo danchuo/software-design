@@ -8,10 +8,11 @@ public class Player {
   public static final int MAX_SLEEP_TIME = 200;
   public static final int MIN_SLEEP_TIME = 100;
 
-  private int balance;
   private final Deck deck;
   private final Thread playersThread;
   private final SecureRandom random;
+
+  private int balance;
   private String gameResult;
 
   Player(String name, Deck deck) {
@@ -22,7 +23,7 @@ public class Player {
         MessageFormat.format(
             "The game has not started yet or {0} {1} has not finished playing.\n",
             getClass().getSimpleName(), name);
-    playersThread = new Thread(this::makeMove, name);
+    playersThread = new Thread(this::playGameUtilInterrupt, name);
   }
 
   public synchronized int getBalance() {
@@ -33,18 +34,22 @@ public class Player {
     balance += by;
   }
 
-  private void makeMove() {
+  private void playGameUtilInterrupt() {
     try {
       while (true) {
-        increaseBalance(deck.getCart());
-        Thread.sleep(random.nextInt(MIN_SLEEP_TIME, MAX_SLEEP_TIME + 1));
+        makeMove();
       }
     } catch (InterruptedException ignored) {
       gameResult =
           MessageFormat.format(
-              "{0} {1} left the game with a balance of {2}\n",
+              "{0} {1} left the game with a balance of {2} point.\n",
               getClass().getSimpleName(), playersThread.getName(), getBalance());
     }
+  }
+
+  public void makeMove() throws InterruptedException {
+    increaseBalance(deck.getCart());
+    Thread.sleep(random.nextInt(MIN_SLEEP_TIME, MAX_SLEEP_TIME + 1));
   }
 
   public synchronized int tryDecreaseBalance(int by) {
@@ -63,7 +68,7 @@ public class Player {
     return gameResult;
   }
 
-  public void play() {
+  public void startPlay() {
     playersThread.start();
   }
 
@@ -76,5 +81,9 @@ public class Player {
       playersThread.join();
     } catch (InterruptedException ignored) {
     }
+  }
+
+  public SecureRandom getRandom() {
+    return random;
   }
 }
