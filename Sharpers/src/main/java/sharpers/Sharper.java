@@ -1,5 +1,6 @@
 package sharpers;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class Sharper extends Player {
@@ -12,7 +13,7 @@ public class Sharper extends Player {
 
   Sharper(List<Player> players, String name, Deck deck) {
     super(name, deck);
-    this.players = players;
+    this.players = new ArrayList<>(players);
   }
 
   @Override

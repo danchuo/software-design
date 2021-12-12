@@ -86,4 +86,8 @@ public class Player {
   public SecureRandom getRandom() {
     return random;
   }
+
+  public String getName() {
+    return playersThread.getName();
+  }
 }

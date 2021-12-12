@@ -1,9 +1,9 @@
 package sharpers;
 
 import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.util.ArrayList;
@@ -18,10 +18,10 @@ public class NameGenerator {
     random = new SecureRandom();
     names = new ArrayList<>();
     try {
-      var fileName = "src\\main\\resources\\names.txt";
-      File file = new File(fileName);
-      FileReader fr = new FileReader(file, StandardCharsets.UTF_8);
-      BufferedReader reader = new BufferedReader(fr);
+      var fileName = "/names.txt";
+      InputStream input = getClass().getResourceAsStream(fileName);
+      BufferedReader reader =
+          new BufferedReader(new InputStreamReader(input, StandardCharsets.UTF_8));
       String line = reader.readLine();
       while (line != null) {
         names.add(line);
@@ -37,7 +37,7 @@ public class NameGenerator {
     if (names.size() > 1) {
       result = names.get(random.nextInt(0, names.size()));
     } else {
-      result = Integer.toString(0, Integer.MAX_VALUE / 2);
+      result = Double.toString(System.currentTimeMillis() * 0.0001);
     }
 
     return result;
