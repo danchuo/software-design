@@ -1,6 +1,5 @@
 package sharpers;
 
-import java.io.File;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
@@ -46,27 +45,48 @@ public class Game {
 
     waitAllPlayers(allPlayers);
 
-    return printResult(allPlayers);
+    return createResult(allPlayers);
   }
 
-  private static String printResult(List<Player> players) {
+  private static String createResult(List<Player> players) {
     var stringBulider = new StringBuilder(100);
-    Player playerWithMaxBalance = players.get(0);
+    Player playerWithMaxBalance = findPlayerWithMaxBalance(players);
     for (var player : players) {
       stringBulider.append(player.getGameResult());
+    }
+
+    var winners = findAllPlayersWithBalance(players, playerWithMaxBalance.getBalance());
+
+    for (var winner : winners) {
+      String gameResult =
+          MessageFormat.format(
+              "\nCongratulations! {0} {1} has the most points - {2} and wins the game!\n",
+              winner.getClass().getSimpleName(), winner.getName(), winner.getBalance());
+      stringBulider.append(gameResult);
+    }
+
+    return stringBulider.toString();
+  }
+
+  private static List<Player> findAllPlayersWithBalance(List<Player> players, int balance) {
+    var playersWithMaxBalance = new ArrayList<Player>();
+    for (var player : players) {
+      if (player.getBalance() == balance) {
+        playersWithMaxBalance.add(player);
+      }
+    }
+
+    return playersWithMaxBalance;
+  }
+
+  private static Player findPlayerWithMaxBalance(List<Player> players) {
+    Player playerWithMaxBalance = players.get(0);
+    for (var player : players) {
       if (player.getBalance() > playerWithMaxBalance.getBalance()) {
         playerWithMaxBalance = player;
       }
     }
-
-    String gameResult =
-        MessageFormat.format(
-            "\nCongratulations! {0} {1} has the most points - {2} and wins the game!\n",
-            playerWithMaxBalance.getClass().getSimpleName(),
-            playerWithMaxBalance.getName(),
-            playerWithMaxBalance.getBalance());
-    stringBulider.append(gameResult);
-    return stringBulider.toString();
+    return playerWithMaxBalance;
   }
 
   private static void startGame(List<Player> players) {

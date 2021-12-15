@@ -37,7 +37,7 @@ public class NameGenerator {
     if (names.size() > 1) {
       result = names.get(random.nextInt(0, names.size()));
     } else {
-      result = Double.toString(System.currentTimeMillis() * 0.0001);
+      result = Double.toString(System.currentTimeMillis() * 0.00001 * random.nextInt(0, 100));
     }
 
     return result;
