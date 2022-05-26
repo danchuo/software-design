@@ -5,18 +5,25 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
 public final class JigsawServer extends Thread {
 
     public static final char DELIMITER ='%';
+    public static final int MAX_GAME_DURATION = 600;
+    public static final int SECONDS = 60;
+    public static final int MIN_GAME_DURATION = 30;
     private static final Set<JigsawServer> TEST_SERVERS = new HashSet<>();
-    private static final char[] FIGURES={'1','2','3','4','5','6','7','8','9'};
+    private static final char[] FIGURES = {'1','2','3','4','5','6','7','8','9'};
     private static final ArrayList<String> CREATED_FIGURES = new ArrayList<>();
+    private static int maxSeconds = 0;
     private final Socket connectedSocket;
     private final BufferedReader bufferedReader;
     private final PrintWriter printWriter;
+    private JigsawGameResult jigsawGameResult;
     private String clientName;
 
     JigsawServer(Socket connected,String clientName) throws IOException {
@@ -41,9 +48,9 @@ public final class JigsawServer extends Thread {
     private static synchronized void shutdownJigsawServers() {
         Iterator<JigsawServer> iterator = TEST_SERVERS.iterator();
         while (iterator.hasNext()) {
-            JigsawServer JigsawServer = iterator.next();
+            var server = iterator.next();
             iterator.remove();
-            stopJigsawServer(JigsawServer);
+            stopJigsawServer(server);
         }
     }
 
@@ -57,7 +64,8 @@ public final class JigsawServer extends Thread {
     }
 
     public static void main(String... args) {
-            int maxClients = askNumber("max number of clients", 1, 2);
+            int maxClients = askNumber("maximum number of clients", 1, 2);
+             maxSeconds = askNumber("maximum game duration in seconds", MIN_GAME_DURATION, MAX_GAME_DURATION);
         try (ServerSocket serverSocket = new ServerSocket(5000)) {
             System.out.println("TCP/IP JigsawServer waiting for clients on port 5000...)");
             System.out.println("Print exit to exit...");
@@ -127,10 +135,12 @@ public final class JigsawServer extends Thread {
                 }
             }
             server.sendMessage("game started"
-                    +DELIMITER
+                    + DELIMITER
                     + generateFigure(0)
-                    +DELIMITER
-                    +opponentNames);
+                    + DELIMITER
+                    + opponentNames
+                    + DELIMITER
+                    + maxSeconds);
 
         }
     }
@@ -138,13 +148,6 @@ public final class JigsawServer extends Thread {
     @Override
     public void run() {
         try {
-
-            InputStream inputStream = connectedSocket.getInputStream();
-            BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
-
-            OutputStream outputStream = connectedSocket.getOutputStream();
-            PrintWriter printWriter = new PrintWriter(outputStream, true);
-
             while (!isInterrupted()) {
                 String clientString = bufferedReader.readLine();
                 if (clientString == null) {
@@ -154,7 +157,8 @@ public final class JigsawServer extends Thread {
                     break;
                 }
                 System.out.println(Thread.currentThread().getName() + ": from Client: " + clientString);
-                printWriter.println(handleCommand(clientString)); // just echo...
+                printWriter.println(handleCommand(clientString));
+                checkForEndOfGame();
             }
 
             printWriter.close();
@@ -166,25 +170,62 @@ public final class JigsawServer extends Thread {
     }
 
     private String handleCommand(String command){
+        var info=command.split(String.valueOf(DELIMITER));
         return switch (command.charAt(0)) {
             case 'r' -> registerClient(command);
-            case 'f' -> generateFigure(Integer.parseInt(command.split(String.valueOf(DELIMITER))[1]));
-            case 'e' -> generateReport(Integer.parseInt(command.split(String.valueOf(DELIMITER))[1]));
+            case 'f' -> generateFigure(Integer.parseInt(info[1]));
+            case 'e' ->
+                generateReport(Integer.parseInt(info[1]), Integer.parseInt(info[2]));
             default -> "unknown command";
         };
     }
 
+    private String generateReport(int amount, int time){
+        jigsawGameResult = new JigsawGameResult(clientName, LocalDateTime.now(ZoneOffset.UTC),amount,time);
+        var minutes = time / SECONDS;
+        var seconds = time % SECONDS;
+        return "you spent " + amount + " figures and " + minutes + ':' + seconds + " time";
+    }
 
-    private String generateReport(int amount){
-        var builder=new StringBuilder(10);
-        builder.append("you spent ").append(amount).append(" figures.");
+    private void checkForEndOfGame(){
+        JigsawGameResult winner = null;
+        for (var server : TEST_SERVERS) {
+            if (server.jigsawGameResult == null){
+                return;
+            } else {
+                if (winner == null){
+                    winner = server.jigsawGameResult;
+                } else {
+                   if (server.jigsawGameResult.amountOfTurns() > winner.amountOfTurns()){
+                       winner = server.jigsawGameResult;
+                   } else {
+                       if (server.jigsawGameResult.amountOfTurns() == winner.amountOfTurns() &&
+                               server.jigsawGameResult.amountOfSeconds() < winner.amountOfSeconds()){
+                           winner = server.jigsawGameResult;
+                       }
+                   }
+                }
+            }
+        }
 
-        return builder.toString();
+        var result = new StringBuilder(10);
+
+        result.append("congratulatios to the winner ");
+        result.append(winner.login());
+        result.append(", with the most placed figures: ");
+        result.append(winner.amountOfTurns());
+        result.append(", and seconds spent: ");
+        result.append(winner.amountOfSeconds());
+
+        for (var server : TEST_SERVERS) {
+            server.sendMessage(result.toString());
+        }
+
     }
 
     private String registerClient(String command){
         clientName = command.substring(2);
-        return "client "+clientName+" registered, please wait until all clients connect";
+        return "client " + clientName + " registered, please wait until all clients connect";
     }
 
     public void sendMessage(String message) {
@@ -261,7 +302,7 @@ public final class JigsawServer extends Thread {
                 var client= new JigsawServer(connected,name);
                 client.start();
                 ++servers;
-                if(servers== maxServers){
+                if (servers == maxServers){
                     client.startGame();
                 }
             } else {

@@ -15,10 +15,8 @@ import java.util.concurrent.CompletableFuture;
 
 public class JigsawController {
 
-  private static final char DELIMITER = '%';
-  public static final int SECONDS = 60;
   public static final int SERVER_PORT = 5000;
-
+  private static final char DELIMITER = '%';
   @FXML private GridPane childGrid;
   @FXML private Button endGameButton;
   @FXML private TextField inputText;
@@ -28,45 +26,57 @@ public class JigsawController {
   @FXML private Button registerButton;
   @FXML private TextField timerField;
   @FXML private TextArea textArea;
+  @FXML private TextField maxDurationText;
+
+  private int maxDuration;
   private JigsawClient jigsawClient;
-  private String figureToPlace;
-  private int placedFigures;
-  private volatile int secondsPassed;
-  private volatile boolean isTimerOn;
+  private JigsawModel currentJigsawModel;
+
+  private static String convertIntToStringTime(int allSeconds) {
+    var minutes = allSeconds / Timer.SECONDS;
+    var seconds = allSeconds % Timer.SECONDS;
+    return (minutes > 9 ? "" : "0") + minutes + ':' + (seconds > 9 ? "" : "0") + seconds;
+  }
 
   @FXML
-  protected void onMouseClickedEndGameButton(MouseEvent event) {
-    appendText("game is over, thank you.\nwaiting for the rest of the clients to finish the game ");
+  protected void onMouseClickedEndGameButton(MouseEvent event) throws IOException {
+    appendText("game is over, thank you");
     placeFigureButton.setDisable(true);
     endGameButton.setDisable(true);
-    isTimerOn = false;
+    currentJigsawModel.endGame();
 
-    CompletableFuture<String> completableFuture =
-        CompletableFuture.supplyAsync(
-                () -> {
-                  try {
-                    return jigsawClient.sendMessageAndGetAnswer("e" + DELIMITER + placedFigures);
-                  } catch (IOException e) {
-                    throw new RuntimeException(e);
-                  }
-                })
-            .whenCompleteAsync(
-                (result, exeption) -> {
-                  appendText(result);
-                });
+    new Thread(
+            () -> {
+              try {
+                appendText(
+                    jigsawClient.sendMessageAndGetAnswer(
+                        "e"
+                            + DELIMITER
+                            + currentJigsawModel.getPlacedFigures()
+                            + DELIMITER
+                            + currentJigsawModel.getSecondsPassed()));
+                appendText("waiting for the rest of the clients to finish the game ");
+                appendText(jigsawClient.getAnswer());
+              } catch (IOException e) {
+                throw new RuntimeException(e);
+              }
+            })
+        .start();
   }
 
   @FXML
   protected void onMouseClickedPlaceFigureButton(MouseEvent event) {
-    appendText("figure placed " + figureToPlace);
-    ++placedFigures;
+    appendText("figure placed " + currentJigsawModel.getFigureToPlace());
+    currentJigsawModel.placeFigure();
     try {
-      figureToPlace = jigsawClient.sendMessageAndGetAnswer("f" + DELIMITER + placedFigures);
+      currentJigsawModel.setFigureToPlace(
+          jigsawClient.sendMessageAndGetAnswer(
+              "f" + DELIMITER + currentJigsawModel.getPlacedFigures()));
     } catch (IOException e) {
-      throw new RuntimeException(e);
+      appendText(e.getMessage());
     }
 
-    appendText("received figure " + figureToPlace);
+    appendText("received figure " + currentJigsawModel.getFigureToPlace());
   }
 
   @FXML
@@ -77,7 +87,8 @@ public class JigsawController {
     }
 
     try {
-      appendText(jigsawClient.sendMessageAndGetAnswer("r " + inputText.getText()));
+      currentJigsawModel = new JigsawModel(this::updateTime, inputText.getText());
+      appendText(jigsawClient.sendMessageAndGetAnswer("r " + currentJigsawModel.getName()));
       registerButton.setDisable(true);
       inputText.setDisable(true);
 
@@ -87,8 +98,9 @@ public class JigsawController {
                     try {
                       return jigsawClient.getAnswer();
                     } catch (IOException e) {
-                      throw new RuntimeException(e);
+                      appendText(e.getMessage());
                     }
+                    return "register expetion";
                   })
               .whenCompleteAsync(
                   (result, exeption) -> {
@@ -97,7 +109,7 @@ public class JigsawController {
                   });
 
     } catch (IOException e) {
-      throw new RuntimeException(e);
+      appendText(e.getMessage());
     }
   }
 
@@ -105,51 +117,47 @@ public class JigsawController {
     var parts = command.split(String.valueOf(DELIMITER));
 
     appendText(parts[0]);
-    figureToPlace = parts[1];
-    appendText("received figure " + figureToPlace);
+    currentJigsawModel.setFigureToPlace(parts[1]);
+    appendText("received figure " + currentJigsawModel.getFigureToPlace());
     opponentName.setText(parts[2]);
+
+    maxDuration = Integer.parseInt(parts[3]);
+    maxDurationText.setText(convertIntToStringTime(maxDuration));
 
     placeFigureButton.setDisable(false);
     endGameButton.setDisable(false);
 
-    Thread timerThread =
-        new Thread(
-            () -> {
-              while (isTimerOn) {
-                addSecond();
-                try {
-                  Thread.sleep(1000);
-                } catch (InterruptedException ignored) {
-                  return;
-                }
-              }
-            });
-    timerThread.start();
-  }
-
-  private void addSecond() {
-    ++secondsPassed;
-
-    var minutes = secondsPassed / SECONDS;
-    var seconds = secondsPassed % SECONDS;
-    timerField.setText(String.valueOf(minutes) + ':' + seconds);
+    currentJigsawModel.startGame();
   }
 
   @FXML
   protected void initialize() {
     try {
-      isTimerOn = true;
+      textArea.clear();
       jigsawClient = new JigsawClient("localhost", SERVER_PORT);
       appendText(jigsawClient.getAnswer());
       timerField.setText("00:00");
     } catch (ConnectException ex) {
       appendText("server is offline, please start server and new client");
+      registerButton.setDisable(true);
     } catch (Exception ex) {
       appendText("got exception: " + ex);
     }
 
     placeFigureButton.setDisable(true);
     endGameButton.setDisable(true);
+  }
+
+  private void updateTime() {
+    timerField.setText(convertIntToStringTime(currentJigsawModel.getSecondsPassed()));
+    if (currentJigsawModel.getSecondsPassed() >= maxDuration) {
+      appendText("your time is up");
+      try {
+        onMouseClickedEndGameButton(null);
+      } catch (IOException e) {
+        appendText(e.getMessage());
+      }
+    }
   }
 
   private void appendText(String text) {

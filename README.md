@@ -1,2 +1,1 @@
-"# software-design" 
-"# software-design" 
+Completed assignments for the course "Software design", 2021-2022

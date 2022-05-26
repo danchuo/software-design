@@ -30,9 +30,6 @@ public class JigsawClient {
 
     public String sendMessageAndGetAnswer(String message) throws IOException {
         sendMessage(message);
-        //    if (serverString == null) {
-        //      clientThread.interrupt();
-        //    }
         return getAnswer();
     }
 }
