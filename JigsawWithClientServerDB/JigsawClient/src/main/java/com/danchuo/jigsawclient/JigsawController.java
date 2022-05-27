@@ -10,6 +10,10 @@ import javafx.scene.layout.GridPane;
 import java.io.IOException;
 import java.net.ConnectException;
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 
@@ -20,6 +24,7 @@ public class JigsawController {
   @FXML private GridPane childGrid;
   @FXML private Button endGameButton;
   @FXML private TextField inputText;
+  @FXML private Button showTopGamesButton;
   @FXML private TextField opponentName;
   @FXML private GridPane mainGrid;
   @FXML private Button placeFigureButton;
@@ -38,11 +43,54 @@ public class JigsawController {
     return (minutes > 9 ? "" : "0") + minutes + ':' + (seconds > 9 ? "" : "0") + seconds;
   }
 
+  private static String generateTopTableFromAnswer(String answer) {
+    var top = new StringBuilder(10);
+    var table = answer.split(String.valueOf(DELIMITER));
+    top.append("top 10 winners:\n");
+    int parameterIndex = 0;
+
+    for (var parameter : table) {
+      switch (parameterIndex) {
+        case 0 -> {
+          top.append("player ");
+          top.append(parameter);
+        }
+        case 1 -> {
+          var date = LocalDateTime.parse(parameter).atZone(ZoneId.systemDefault()).toLocalDateTime();
+          DateTimeFormatter formatter2 = DateTimeFormatter.ofPattern("dd.MM.yyyy - HH:mm:ss");
+          OffsetDateTime timeUtc = date.atOffset(ZoneOffset.UTC);
+          OffsetDateTime offsetTime = timeUtc.withOffsetSameInstant(OffsetDateTime.now().getOffset());
+          top.append(", game ended at ");
+          top.append(formatter2.format(offsetTime));
+        }
+        case 2 -> {
+          top.append(", figures paced: ");
+          top.append(parameter);
+        }
+        default -> {
+          top.append(", time spent ");
+          top.append(convertIntToStringTime(Integer.parseInt(parameter)));
+          top.append("\n");
+          parameterIndex = -1;
+        }
+      }
+      ++parameterIndex;
+    }
+
+    return top.toString();
+  }
+
+  @FXML
+  protected void onMouseClickedShowTopButton(MouseEvent event) throws IOException {
+    appendText(generateTopTableFromAnswer(jigsawClient.sendMessageAndGetAnswer("t")));
+  }
+
   @FXML
   protected void onMouseClickedEndGameButton(MouseEvent event) throws IOException {
     appendText("game is over, thank you");
     placeFigureButton.setDisable(true);
     endGameButton.setDisable(true);
+    showTopGamesButton.setDisable(true);
     currentJigsawModel.endGame();
 
     new Thread(
@@ -126,6 +174,7 @@ public class JigsawController {
 
     placeFigureButton.setDisable(false);
     endGameButton.setDisable(false);
+    showTopGamesButton.setDisable(false);
 
     currentJigsawModel.startGame();
   }
@@ -146,6 +195,7 @@ public class JigsawController {
 
     placeFigureButton.setDisable(true);
     endGameButton.setDisable(true);
+    showTopGamesButton.setDisable(true);
   }
 
   private void updateTime() {
