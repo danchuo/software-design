@@ -13,6 +13,7 @@ public class JigsawApplication extends Application {
 
     @Override
     public void start(Stage stage) throws IOException {
+        System.setProperty("javafx.sg.warn", "true");
         FXMLLoader fxmlLoader =
                 new FXMLLoader(JigsawApplication.class.getResource("main-view.fxml"));
         Scene scene = new Scene(fxmlLoader.load(), WIDTH, HEIGHT);

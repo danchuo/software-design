@@ -1,5 +1,7 @@
 package com.danchuo.jigsawclient;
 
+import javafx.application.Platform;
+
 public class Timer {
 
   public static final int SECONDS = 60;
@@ -38,7 +40,7 @@ public class Timer {
 
   private void addSecond() {
     ++secondsPassed;
-    addSecondEvent.run();
+    Platform.runLater(addSecondEvent);
   }
 
   public void startTimer() {
