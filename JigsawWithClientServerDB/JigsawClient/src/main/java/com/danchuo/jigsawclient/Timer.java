@@ -40,7 +40,9 @@ public class Timer {
 
   private void addSecond() {
     ++secondsPassed;
-    Platform.runLater(addSecondEvent);
+    if (addSecondEvent != null) {
+      Platform.runLater(addSecondEvent);
+    }
   }
 
   public void startTimer() {

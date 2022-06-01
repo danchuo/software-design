@@ -49,7 +49,7 @@ public final class JigsawDB implements AutoCloseable {
     var array = new ArrayList<JigsawGameResult>();
     var game =
         statement.executeQuery(
-            "select * from GAME_RESULTS order by ENTRY_DATE, SECONDS, FIGURES OFFSET 0 ROWS FETCH NEXT 10 ROWS ONLY");
+            "select * from GAME_RESULTS order by FIGURES DESC, SECONDS ASC, ENTRY_DATE OFFSET 0 ROWS FETCH NEXT 10 ROWS ONLY");
 
     while (game.next()) {
       array.add(
@@ -81,7 +81,7 @@ public final class JigsawDB implements AutoCloseable {
     try {
       DriverManager.getConnection("jdbc:derby:;shutdown=true");
     } catch (SQLException se) {
-      if (se.getSQLState().equals("XJ015")) {
+      if ("XJ015".equals(se.getSQLState())) {
         gotSQLExc = true;
       }
     }
